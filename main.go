@@ -8,11 +8,17 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func api(currencyFrom string, currencyTo string, amount float64) float64 {
 	// Getting an environment variable for secret
-	apiKey := os.Getenv("API_KEY")
+	apiKey, exists := os.LookupEnv("API_KEY")
+	if !exists {
+		log.Fatal(
+			"Must set the environment variable of the name API_KEY. Get the API Key from openexchangerates.org",
+		)
+	}
 	url := "https://openexchangerates.org/api/latest.json?app_id=" + apiKey
 
 	// This sends a GET request to the api
@@ -76,7 +82,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	currencyFrom := os.Args[2]
-	currencyTo := os.Args[3]
+	currencyFrom := strings.ToUpper(os.Args[2])
+	currencyTo := strings.ToUpper(os.Args[3])
 	fmt.Println(base, currencyFrom, "=", api(currencyFrom, currencyTo, amount), currencyTo)
 }

@@ -40,7 +40,7 @@ Please adhere to this project's `CODE OF CONDUCT.md`.
 
 ## TODO
 
-- Be able to provide lowercase currency abbreviations as input
+- ~Be able to provide lowercase currency abbreviations as input~
 - Turn it into a TUI application rather than a CLI
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
