@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -9,9 +10,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/charmbracelet/huh"
 )
 
-func api(currencyFrom string, currencyTo string, amount float64) float64 {
+func api(currencyFrom string, currencyTo string, base string) float64 {
 	// Getting an environment variable for secret
 	apiKey, exists := os.LookupEnv("API_KEY")
 	if !exists {
@@ -57,6 +60,11 @@ func api(currencyFrom string, currencyTo string, amount float64) float64 {
 		log.Fatal("Error:", err)
 	}
 
+	amount, err := strconv.ParseFloat(base, 64)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+
 	if currencyFrom == "USD" {
 		rateFrom := 1.0
 		rateTo := Response.Rates[currencyTo]
@@ -75,14 +83,63 @@ func api(currencyFrom string, currencyTo string, amount float64) float64 {
 }
 
 func main() {
-	// We use os.Args[number] to get an argument passed to the program
-	base := os.Args[1]
-	// We use strconv.ParseFloat to convert the argument which is a string type to a float64
-	amount, err := strconv.ParseFloat(base, 64)
-	if err != nil {
-		log.Fatal("Error: ", err)
+	var (
+		currencyFrom string
+		currencyTo   string
+		base         string
+	)
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Choose your base currency").
+				Options(
+					huh.NewOption("$ USD", "USD"),
+					huh.NewOption("  PKR", "PKR"),
+					huh.NewOption("¥ JPY", "JPY"),
+					huh.NewOption("₹ INR", "INR"),
+					huh.NewOption("€ EUR", "EUR"),
+					huh.NewOption("$ CAD", "CAD"),
+				).
+				Value(&currencyFrom),
+			huh.NewSelect[string]().
+				Title("Choose the currency you want to convert to").
+				Options(
+					huh.NewOption("$ USD", "USD"),
+					huh.NewOption("  PKR", "PKR"),
+					huh.NewOption("¥ JPY", "JPY"),
+					huh.NewOption("₹ INR", "INR"),
+					huh.NewOption("€ EUR", "EUR"),
+					huh.NewOption("$ CAD", "CAD"),
+				).
+				Validate(func(x string) error {
+					if x == currencyFrom {
+						return errors.New("Selecting the same currency is redundant.... ")
+					}
+					return nil
+				}).
+				Value(&currencyTo),
+			huh.NewInput().
+				Title("Enter the amount to convert").
+				Prompt("> ").
+				Validate(func(x string) error {
+					if _, err := strconv.ParseFloat(x, 64); err != nil {
+						return errors.New("Please enter in a valid unit of currency")
+					}
+					return nil
+				}).
+				Value(&base),
+		),
+	)
+	if os.Args[1] == "run" {
+		err := form.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(base, currencyFrom, "=", api(currencyFrom, currencyTo, base), currencyTo)
+	} else {
+		base := os.Args[1]
+		currencyFrom := strings.ToUpper(os.Args[2])
+		currencyTo := strings.ToUpper(os.Args[3])
+		fmt.Println(base, currencyFrom, "=", api(currencyFrom, currencyTo, base), currencyTo)
 	}
-	currencyFrom := strings.ToUpper(os.Args[2])
-	currencyTo := strings.ToUpper(os.Args[3])
-	fmt.Println(base, currencyFrom, "=", api(currencyFrom, currencyTo, amount), currencyTo)
 }
